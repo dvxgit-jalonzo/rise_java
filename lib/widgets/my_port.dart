@@ -2,6 +2,7 @@ import 'dart:isolate';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:rise_java/widgets/my_calling_widget.dart';
 import 'package:rise_java/widgets/my_incoming_call_widget.dart';
 import 'package:rise_java/widgets/my_ongoing_call_widget.dart';
 
@@ -26,15 +27,34 @@ class MyPort{
         ).then((_) => restartListener(context));
       }
 
-      if (message['event'] == "accepted") {
+      if (message['event'] == "calling") {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const MyOngoingCallWidget()),
+          MaterialPageRoute(builder: (context) => const MyCallingWidget()),
         ).then((_) => restartListener(context));
       }
 
+      if (message['event'] == "accepted") {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MyOngoingCallWidget()),
+        );
+        // if (ModalRoute.of(context)?.settings.name == "incoming_call") {
+        //   // Replace incoming call screen with ongoing call screen
+        //
+        // } else {
+        //   // Normal outgoing call, just push
+        //   Navigator.push(
+        //     context,
+        //     MaterialPageRoute(builder: (context) => const MyOngoingCallWidget()),
+        //   ).then((_) => restartListener(context));
+        // }
+      }
+
       if (message['event'] == "hangup") {
-        Navigator.pop(context);
+        while (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
       }
     });
   }

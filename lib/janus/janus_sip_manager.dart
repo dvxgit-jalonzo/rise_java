@@ -1,5 +1,7 @@
 
+import 'dart:isolate';
 import 'dart:ui';
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:rise_java/my_local_storage.dart';
 import 'package:webrtc_interface/webrtc_interface.dart';
@@ -30,18 +32,41 @@ class JanusSipManager {
       _sip = await _session!.attach<JanusSipPlugin>();
 
       _sip?.typedMessages?.listen((result) async {
-        // debugPrint(result.event.plugindata?.data.toJson());
         Object data = result.event.plugindata?.data;
         if(data is SipIncomingCallEvent){
-          var incomingCallData = data.toJson();
-          //sip:6005@192.168.33.53
-          debugPrint("incoming call event receive");
-          IsolateNameServer.lookupPortByName("event_port")?.send({
-            "event" : "incoming_call",
-            "caller" : incomingCallData['result']['username'].split(":")[1].split('@')[0]
-          });
           await _sip?.initializeWebRTCStack();
           rtc = result.jsep;
+          var incomingCallData = data.toJson();
+          var caller = incomingCallData['result']['username'].split(":")[1].split('@')[0];
+          //sip:6005@192.168.33.53
+          debugPrint("incoming call event receive");
+          final SendPort? sendPort = IsolateNameServer.lookupPortByName('event_port');
+          sendPort?.send({
+            "event" : "incoming_call",
+            "caller" : caller
+          });
+
+          await AwesomeNotifications().createNotification(
+              content: NotificationContent(
+                id: 10,
+                channelKey: 'sip_channel',
+                title: 'Incoming Call',
+                body: 'From: $caller',
+                fullScreenIntent: true,
+                wakeUpScreen: true,
+                payload: {
+                  "caller" : caller
+                } ,
+                locked: true,
+                category: NotificationCategory.Call
+              ),
+              actionButtons: [
+                NotificationActionButton(key: 'ACCEPT', label: 'Accept', actionType: ActionType.Default, color: Colors.green),
+                NotificationActionButton(key: 'DECLINE', label: 'Decline', actionType: ActionType.DismissAction, color: Colors.red),
+              ]
+          );
+
+
         }
         if(data is SipAcceptedEvent){
           RTCSessionDescription? remoteOffer = result.jsep;
@@ -55,17 +80,20 @@ class JanusSipManager {
 
 
           debugPrint("accepted event receive");
-          IsolateNameServer.lookupPortByName("event_port")?.send({
+
+
+          final SendPort? sendPort = IsolateNameServer.lookupPortByName('event_port');
+          sendPort?.send({
             "event" : "accepted",
           });
-
         }
         if(data is SipUnRegisteredEvent){
           debugPrint("unregister event receive");
         }
         if(data is SipHangupEvent){
           debugPrint("hangup event receive");
-          IsolateNameServer.lookupPortByName("event_port")?.send({
+          final SendPort? sendPort = IsolateNameServer.lookupPortByName('event_port');
+          sendPort?.send({
             "event" : "hangup"
           });
           await _sip?.webRTCHandle?.peerConnection?.close();
@@ -75,7 +103,11 @@ class JanusSipManager {
           debugPrint("registered event received");
         }
         if(data is SipCallingEvent){
-          debugPrint("calling event receive");
+          final SendPort? sendPort = IsolateNameServer.lookupPortByName('event_port');
+          sendPort?.send({
+            "event" : "${data.toJson()['result']['event']}",
+          });
+          debugPrint("[manager] ${data.toJson()['result']['event']} event");
         }
         if(data is SipMissedCallEvent){
           debugPrint("missed call event receive");
@@ -135,7 +167,10 @@ class JanusSipManager {
     await _sip?.accept(sessionDescription: answer);
   }
 
-
+  Future<void> decline() async{
+    debugPrint("[manager] declined");
+    await _sip?.decline();
+  }
 
   Future<void> autoRegister() async{
     final androidHost = await MyLocalStorage().get("string", "android_host");

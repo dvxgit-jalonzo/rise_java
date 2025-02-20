@@ -2,13 +2,15 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:rise_java/awesome_notification_modes/awesome_notification_channel.dart';
 import 'package:rise_java/janus/janus_sip_manager.dart';
 import 'package:rise_java/my_http_overrides.dart';
 import 'package:rise_java/my_local_storage.dart';
-import 'package:webrtc_interface/webrtc_interface.dart';
+
 
 SendPort? sendPortToMainFrame;
 
@@ -30,7 +32,14 @@ Future<void> initializeService() async {
 void onStart(ServiceInstance service) async {
 
   if (service is AndroidServiceInstance) {
+
+    service.setAsForegroundService();
+
     HttpOverrides.global = MyHttpOverrides();
+
+    // List<NotificationChannel> channels = [AwesomeNotificationChannel.instance.sipChannelInstance];
+    // await AwesomeNotifications().initialize(null, channels, debug: true);
+
     await JanusSipManager.instance.initializeSip();
     final sip = JanusSipManager.instance.sipInstance;
 
@@ -117,7 +126,7 @@ void onStart(ServiceInstance service) async {
     });
 
     service.on('decline').listen((event) async {
-      debugPrint("sending decline");
+      debugPrint("[background] decline");
       await sip?.decline();
     });
 

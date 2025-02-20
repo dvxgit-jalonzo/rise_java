@@ -4,13 +4,10 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_awesome_alert_box/flutter_awesome_alert_box.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:onscreen_num_keyboard/onscreen_num_keyboard.dart';
 import 'package:rise_java/widgets/my_call_history_widget.dart';
-import 'package:rise_java/widgets/my_incoming_call_widget.dart';
 import 'package:rise_java/widgets/my_message_widget.dart';
-import 'package:rise_java/widgets/my_ongoing_call_widget.dart';
 import 'package:rise_java/widgets/my_port.dart';
 import 'package:rise_java/widgets/my_registration_widget.dart';
 
@@ -30,6 +27,7 @@ class _MyDialPadWidgetState extends State<MyDialPadWidget> {
   void initState() {
     // TODO: implement initState
     super.initState();
+
     MyPort.instance.initializePort(context);
     port = MyPort.instance.portInstance;
   }

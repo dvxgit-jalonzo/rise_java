@@ -3,6 +3,7 @@ import 'dart:isolate';
 import 'package:flutter/material.dart';
 import 'package:flutter_awesome_alert_box/flutter_awesome_alert_box.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:onscreen_num_keyboard/onscreen_num_keyboard.dart';
 
 
@@ -74,12 +75,22 @@ class _MyOngoingCallWidgetState extends State<MyOngoingCallWidget> {
                   children: [
                     GestureDetector(
                       onTap: (){
+                        var message = "";
                         setState(() {
                           speakerPhoneState = !speakerPhoneState;
                         });
                         FlutterBackgroundService().invoke('speakerPhoneState', {
                           "state" : speakerPhoneState
                         });
+                        message = speakerPhoneState ? "Speaker turned on." : "Speaker turned off.";
+
+                        Fluttertoast.showToast(
+                            msg: message,
+                            toastLength: Toast.LENGTH_SHORT,
+                            timeInSecForIosWeb: 1,
+                            backgroundColor: Colors.black,
+                            textColor: Colors.white
+                        );
                       },
                       child: Align(
                           alignment: Alignment.center,
@@ -90,7 +101,7 @@ class _MyOngoingCallWidgetState extends State<MyOngoingCallWidget> {
                                 borderRadius: BorderRadius.circular(100)
                             ),
                             child: Icon(
-                              speakerPhoneState ? Icons.volume_up : Icons.volume_off,
+                              speakerPhoneState ? Icons.music_note : Icons.music_off,
                               size: 30,
                               color: Colors.white,
                             ),
@@ -100,12 +111,23 @@ class _MyOngoingCallWidgetState extends State<MyOngoingCallWidget> {
                     const SizedBox(width: 20),
                     GestureDetector(
                       onTap: (){
+                        var message = "";
                         setState(() {
                           muteState = !muteState;
                         });
                         FlutterBackgroundService().invoke('muteState', {
                           "state" : muteState
                         });
+
+                        message = muteState ? "Microphone turned off." : "Microphone turned on.";
+
+                        Fluttertoast.showToast(
+                            msg: message,
+                            toastLength: Toast.LENGTH_SHORT,
+                            timeInSecForIosWeb: 1,
+                            backgroundColor: Colors.black,
+                            textColor: Colors.white
+                        );
                       },
                       child: Align(
                           alignment: Alignment.center,
@@ -116,7 +138,7 @@ class _MyOngoingCallWidgetState extends State<MyOngoingCallWidget> {
                                 borderRadius: BorderRadius.circular(100)
                             ),
                             child: Icon(
-                              muteState ? Icons.mic_off : Icons.mic,
+                              muteState ? Icons.mic : Icons.mic_off,
                               size: 30,
                               color: Colors.white,
                             ),
@@ -126,12 +148,22 @@ class _MyOngoingCallWidgetState extends State<MyOngoingCallWidget> {
                     const SizedBox(width: 20),
                     GestureDetector(
                       onTap: (){
+                        var message = "";
                         setState(() {
                           speakerModeState = !speakerModeState;
                         });
                         FlutterBackgroundService().invoke('speakerModeState', {
                           "state" : speakerModeState
                         });
+                        message = speakerModeState ? "Speakerphone mode." : "Earpiece mode.";
+
+                        Fluttertoast.showToast(
+                            msg: message,
+                            toastLength: Toast.LENGTH_SHORT,
+                            timeInSecForIosWeb: 1,
+                            backgroundColor: Colors.black,
+                            textColor: Colors.white
+                        );
                       },
                       child: Align(
                           alignment: Alignment.center,
@@ -142,7 +174,7 @@ class _MyOngoingCallWidgetState extends State<MyOngoingCallWidget> {
                                 borderRadius: BorderRadius.circular(100)
                             ),
                             child: Icon(
-                              speakerModeState ? Icons.speaker_phone : Icons.phone_in_talk,
+                              speakerModeState ? Icons.volume_up : Icons.volume_down,
                               size: 30,
                               color: Colors.white,
                             ),
