@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_awesome_alert_box/flutter_awesome_alert_box.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:rise_java/api/my_controllers.dart';
 import 'package:rise_java/awesome_notification_modes/awesome_notification_channel.dart';
@@ -16,15 +17,31 @@ import 'package:rise_java/widgets/my_dial_screen_widget.dart';
 import 'package:rise_java/my_general_configurations.dart';
 
 
+Future<void> initializeService() async {
+  final service = FlutterBackgroundService();
+  await service.configure(
+    iosConfiguration: IosConfiguration(),
+    androidConfiguration: AndroidConfiguration(
+      onStart: onStart,
+      isForegroundMode: true,
+    ),
+  );
+
+  service.startService();
+}
+
 void main() async
 {
   HttpOverrides.global = MyHttpOverrides();
   WidgetsFlutterBinding.ensureInitialized();
+
   await requestCameraPermission();
   await requestMicrophonePermission();
   await requestNotificationPermission();
   await checkAndRequestBatteryOptimization();
+
   List<NotificationChannel> channels = [AwesomeNotificationChannel.instance.sipChannelInstance];
+
   await AwesomeNotifications().initialize(null, channels, debug: true);
   await AwesomeNotifications().setListeners(
     onActionReceivedMethod: AwesomeNotificationHandler.onActionReceivedMethod,
@@ -38,7 +55,6 @@ void main() async
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   Widget build(BuildContext context) {

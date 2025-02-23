@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:rise_java/janus/janus_sip_manager.dart';
+import 'package:rise_java/my_local_storage.dart';
 
 class MyRegistrationWidget extends StatefulWidget {
   const MyRegistrationWidget({super.key});
@@ -43,35 +45,59 @@ class _MyRegistrationWidgetState extends State<MyRegistrationWidget> {
             ),
           ),
           const Spacer(),
-          Column(
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  FlutterBackgroundService().invoke('register');
-                },
-                child: const Text("Register"),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  FlutterBackgroundService().invoke('unregister');
-                },
-                child: const Text("Unregister"),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  FlutterBackgroundService().invoke('callAccept');
-                },
-                child: const Text("Unregister"),
-              ), 
-              ElevatedButton(
-                onPressed: () {
-                  IsolateNameServer.lookupPortByName("event_port")?.send({
-                    "event" : "accepted",
-                  });
-                },
-                child: const Text("Playground"),
-              ),
-            ],
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                ElevatedButton(
+                  onPressed: () async {
+                    var username = _extensionController.text;
+                    var password = _passwordController.text;
+                    debugPrint("saving SIP credentials!");
+                    debugPrint("username $username!");
+                    debugPrint("password $password!");
+                    FlutterBackgroundService().invoke("setUsernameAndPassword", {
+                      "mailbox_number" : username,
+                      "password" : password
+                    });
+                  },
+                  child: const Text("Register"),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    FlutterBackgroundService().invoke('unregister');
+                  },
+                  child: const Text("Unregister"),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    try {
+                      await JanusSipManager().testTobeDelete();
+                      debugPrint('Call button pressed for mailbox');
+                    } catch (e) {
+                      debugPrint('Error calling: $e');
+                    }
+                  },
+                  child: const Text("Make Call"),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    await MyLocalStorage().clear();
+                    debugPrint("storage cleared");
+                  },
+                  child: const Text("clear storage"),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final mailboxNumber = await MyLocalStorage().get("string", "mailbox_number");
+                    final password = await MyLocalStorage().get("string", "sip_password");
+                    debugPrint(mailboxNumber);
+                    debugPrint(password);
+                  },
+                  child: const Text("Playground"),
+                ),
+              ],
+            ),
           )
 
         ],

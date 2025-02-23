@@ -1,39 +1,42 @@
 import 'package:awesome_notifications/awesome_notifications.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:rise_java/janus/janus_sip_manager.dart';
 
 class AwesomeNotificationHandler {
+
+  @pragma('vm:entry-point')
   static Future<void> onActionReceivedMethod(ReceivedAction receivedAction) async {
     try{
       AwesomeNotifications().cancel(10);
     }catch(e){
-      debugPrint(e as String);
+      debugPrint(e.toString());
     }
     if(receivedAction.buttonKeyPressed == 'ACCEPT'){
       debugPrint("[awesome] accept");
-      FlutterBackgroundService().invoke('callAccept');
+      await JanusSipManager().accept();
     }
   }
 
-  // Optionally handle notification created event
+  // Optionally [handle] notification created event
+  @pragma('vm:entry-point')
   static Future<void> onNotificationCreatedMethod(ReceivedNotification receivedNotification) async {
-    // Handle notification created
-    debugPrint("Handle notification created");
+    // [Handle] notification created
+    debugPrint("[Handle] notification created");
   }
 
-  // Optionally handle notification displayed event
+  // Optionally [handle] notification displayed event
+  @pragma('vm:entry-point')
   static Future<void> onNotificationDisplayedMethod(ReceivedNotification receivedNotification) async {
-    // Handle notification displayed
-    debugPrint("Handle notification displayed");
+    // [Handle] notification displayed
+    debugPrint("[Handle] notification displayed");
   }
 
-  // Optionally handle notification dismissed event
+  // Optionally [handle] notification dismissed event
+  @pragma('vm:entry-point')
   static Future<void> onDismissActionReceivedMethod(ReceivedAction receivedAction) async {
     if(receivedAction.buttonKeyPressed == 'DECLINE'){
       debugPrint("[awesome] declined");
-      FlutterBackgroundService().invoke('decline');
+      await JanusSipManager().decline();
     }
   }
 }

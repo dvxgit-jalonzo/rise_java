@@ -1,54 +1,54 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:isolate';
-
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:rise_java/awesome_notification_modes/awesome_notification_channel.dart';
+import 'package:rise_java/awesome_notification_modes/awesome_notification_handler.dart';
 import 'package:rise_java/janus/janus_sip_manager.dart';
 import 'package:rise_java/my_http_overrides.dart';
 import 'package:rise_java/my_local_storage.dart';
 
-
-SendPort? sendPortToMainFrame;
-
-Future<void> initializeService() async {
-  final service = FlutterBackgroundService();
-  await service.configure(
-    iosConfiguration: IosConfiguration(),
-    androidConfiguration: AndroidConfiguration(
-      onStart: onStart,
-      isForegroundMode: true,
-    ),
-  );
-
-  service.startService();
-}
-
-
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
-
   if (service is AndroidServiceInstance) {
 
-    service.setAsForegroundService();
-
+    await service.setAsForegroundService();
+    if (await service.isForegroundService()) {
+      await service.setForegroundNotificationInfo(
+          title: "RISE",
+          content: "Background service is running..."
+      );
+      debugPrint("Background service is running...");
+    }
     HttpOverrides.global = MyHttpOverrides();
 
-    // List<NotificationChannel> channels = [AwesomeNotificationChannel.instance.sipChannelInstance];
-    // await AwesomeNotifications().initialize(null, channels, debug: true);
+    List<NotificationChannel> channels = [AwesomeNotificationChannel.instance.sipChannelInstance];
 
-    await JanusSipManager.instance.initializeSip();
-    final sip = JanusSipManager.instance.sipInstance;
+    await AwesomeNotifications().initialize(null, channels, debug: true);
+    await AwesomeNotifications().setListeners(
+      onActionReceivedMethod: AwesomeNotificationHandler.onActionReceivedMethod,
+      onNotificationCreatedMethod: AwesomeNotificationHandler.onNotificationCreatedMethod,
+      onNotificationDisplayedMethod: AwesomeNotificationHandler.onNotificationDisplayedMethod,
+      onDismissActionReceivedMethod: AwesomeNotificationHandler.onDismissActionReceivedMethod,
+    );
 
-    await JanusSipManager.instance.autoRegister();
+    Timer.periodic(const Duration(seconds: 3), (timer) async {
+      var mailboxNumber = await MyLocalStorage().get("string", "mailbox_number");
+      var sipPassword = await MyLocalStorage().get("string", "sip_password");
+      if (mailboxNumber != null && mailboxNumber.isNotEmpty && sipPassword != null && sipPassword.isNotEmpty) {
+        await JanusSipManager().initializeSip();
+        var sendRegistration = JanusSipManager().sendRegistration;
+        await JanusSipManager().autoRegister(sendRegister: sendRegistration);
+      }else{
+        debugPrint("mailbox number is ${mailboxNumber ?? 'Empty'}");
+        debugPrint("sip password is ${sipPassword ?? 'Empty'}");
+      }
 
-    // Timer.periodic(const Duration(seconds: 3), (timer) async {
-    //   await JanusSipManager.instance.initializeSip();
-    //   await sip?.checkRegistration("6002", sendRegister: false );
-    // });
+    });
+
+
 
     service.on('setAsForeground').listen((event) {
       service.setAsForegroundService();
@@ -59,100 +59,62 @@ void onStart(ServiceInstance service) async {
     });
 
     service.on('register').listen((event) async {
-      final androidHost = await MyLocalStorage().get("string", "android_host");
-
-      debugPrint("Sending registration");
-      debugPrint("android host $androidHost");
-      await sip?.register("sip:6002@$androidHost",
-          forceUdp: true,
-          sendRegister: true,
-          rfc2543Cancel: true,
-          proxy: "sip:$androidHost",
-          secret:"2241");
-      debugPrint("Sending done");
+      await JanusSipManager().autoRegister(sendRegister: true);
     });
 
     service.on('callAccept').listen((event) async {
       debugPrint("Accepted call");
-        await JanusSipManager.instance.accept();
+      await JanusSipManager().accept();
     });
 
     service.on('dtmf').listen((event) async {
       Map<String, dynamic> dtmf = {"tones": "${event?['key']}"};
       debugPrint("$dtmf DTMF trigger");
-      await sip?.sendDtmf(dtmf);
+      await JanusSipManager().sendDtmf(dtmf);
     });
 
     service.on('speakerPhoneState').listen((event) async {
       var speakerState = event?['state'];
-      var receivers = await sip?.webRTCHandle?.peerConnection?.receivers;
-      receivers?.forEach((element) {
-        if (element.track?.kind == 'audio') {
-          element.track?.enabled = speakerState;
-        }
-      });
+      await JanusSipManager().speakerPhoneState(speakerState);
     });
 
     service.on('speakerModeState').listen((event) async {
       var state = event?['state'];
-      var receivers = await sip?.webRTCHandle?.peerConnection?.receivers;
-      receivers?.forEach((element) {
-        if (element.track?.kind == 'audio') {
-          element.track?.enableSpeakerphone(state);
-        }
-      });
+      await JanusSipManager().speakerModeState(state);
     });
 
 
     service.on('muteState').listen((event) async {
       var state = event?['state'];
-      var senders = await sip?.webRTCHandle?.peerConnection?.senders;
-      senders?.forEach((element) {
-        if (element.track?.kind == 'audio') {
-          element.track?.enabled = state;
-        }
-      });
+      await JanusSipManager().muteState(state);
     });
 
     service.on('call').listen((event) async {
       debugPrint("make call triggered");
-      final mailboxNUmber = event?['mailbox_number'];
-      final androidHost = await MyLocalStorage().get("string", "android_host");
-      await sip?.initializeWebRTCStack();
-      await sip?.initializeMediaDevices(mediaConstraints: {'audio': true, 'video': false});
-      var offer = await sip?.createOffer(videoRecv: false, audioRecv: true);
-      await sip?.call("sip:$mailboxNUmber@$androidHost", offer: offer, autoAcceptReInvites: false);
+      final mailboxNumber = event?['mailbox_number'];
+      await JanusSipManager().call(mailboxNumber);
       debugPrint("make call executed.");
     });
 
     service.on('decline').listen((event) async {
       debugPrint("[background] decline");
-      await sip?.decline();
+      await JanusSipManager().decline();
+    });
+
+    service.on('setUsernameAndPassword').listen((event) async {
+      var username = event?['mailbox_number'];
+      var password = event?['password'];
+      await MyLocalStorage().save("string", "mailbox_number", username);
+      await MyLocalStorage().save("string", "sip_password", password);
+      debugPrint("[background] SIP credentials saved!");
     });
 
     service.on('hangup').listen((event) async {
-      debugPrint("sending hangup");
-      await sip?.webRTCHandle?.peerConnection?.close();
-      await sip?.hangup();
+      debugPrint("[background] sending hangup");
+      await JanusSipManager().hangup();
     });
   }
-
-
   service.on('stopService').listen((event) {
     service.stopSelf();
   });
-
-  if (service is AndroidServiceInstance) {
-    if (await service.isForegroundService()) {
-      await service.setForegroundNotificationInfo(
-          title: "RISE",
-          content: "Background service is running..."
-      );
-      debugPrint("Background service is running...");
-    }
-  }
-}
-
-void setSendPortFromForeground(SendPort? port) {
-  sendPortToMainFrame = port; // Store the received SendPort
 }

@@ -20,8 +20,15 @@ class MyControllers{
      }else{
        debugPrint("something error on fetching android host.");
      }
+
+     final reverbKeyResult = await fetchReverbAppKey();
+     if(reverbKeyResult == 200) {
+       debugPrint("reverb key successfully fetch.");
+     }else{
+       debugPrint("something error on fetching reverb key.");
+     }
    }catch(e){
-     print("error on storage load : $e");
+     debugPrint("error on storage load : $e");
    }
   }
 
@@ -65,6 +72,17 @@ class MyControllers{
   }
 
 
+  Future<dynamic> fetchReverbAppKey() async {
+    final base = await MyLocalStorage().get('string', 'base');
+    final route = "$base/api/mobile/reverb_app_key";
+    final response = await http.get(Uri.parse(route), headers: await getHeaders());
+    if(response.statusCode == 200){
+      final androidHost = response.body;
+      await MyLocalStorage().save("string", "reverb_key", androidHost);
+    }
+    return response.statusCode;
+  }
+
   Future<dynamic> fetchAndroidHost() async {
       final base = await MyLocalStorage().get('string', 'base');
       final route = "$base/api/mobile/android_host";
@@ -76,3 +94,5 @@ class MyControllers{
       return response.statusCode;
     }
   }
+
+

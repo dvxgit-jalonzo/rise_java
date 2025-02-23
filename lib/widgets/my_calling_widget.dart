@@ -16,7 +16,15 @@ class _MyCallingWidgetState extends State<MyCallingWidget> {
         title: const Text("Calling"),
         automaticallyImplyLeading: true,
       ),
-      body: const Text("Calling"),
+      body:  const Center(
+        child: Text("Calling",
+          style: TextStyle(
+            fontSize: 20,
+            color: Colors.green,
+            fontWeight: FontWeight.bold
+          ),
+        ),
+      )
     );
   }
 }

@@ -15,6 +15,7 @@ class AwesomeNotificationChannel{
     ledColor: Colors.purple,
     playSound: true,
     enableVibration: true,
+    defaultRingtoneType: DefaultRingtoneType.Ringtone,
     importance: NotificationImportance.Max,
     criticalAlerts: true,
   );
