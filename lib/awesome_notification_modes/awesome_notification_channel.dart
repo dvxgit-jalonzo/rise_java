@@ -16,8 +16,9 @@ class AwesomeNotificationChannel{
     playSound: true,
     enableVibration: true,
     defaultRingtoneType: DefaultRingtoneType.Ringtone,
-    importance: NotificationImportance.Max,
+    importance: NotificationImportance.High,
     criticalAlerts: true,
+    defaultPrivacy: NotificationPrivacy.Public,
   );
 
   NotificationChannel get sipChannelInstance => _sipChannel;

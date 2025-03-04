@@ -44,7 +44,7 @@ class JanusSipManager {
             displayOnForeground: true,
             backgroundColor: Colors.green,
             autoDismissible: false,
-            notificationLayout: NotificationLayout.Default
+            notificationLayout: NotificationLayout.Default,
         ),
         actionButtons: [
           NotificationActionButton(key: 'ACCEPT', label: 'Accept', actionType: ActionType.Default, color: Colors.green, autoDismissible: true),
